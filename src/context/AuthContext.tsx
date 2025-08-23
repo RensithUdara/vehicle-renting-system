@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const response = await authAPI.login({ email, password });
-      
+
       if (response.success) {
         setUser(response.data.user);
         return true;
@@ -80,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const response = await authAPI.register(userData);
-      
+
       if (response.success) {
         setUser(response.data.user);
         return true;
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const response = await authAPI.updateProfile(userData);
-      
+
       if (response.success) {
         setUser(response.data);
         return true;
