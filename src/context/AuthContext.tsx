@@ -17,90 +17,103 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    const initAuth = async () => {
+      try {
+        const savedUser = authAPI.getCurrentUserFromStorage();
+        if (savedUser && authAPI.isAuthenticated()) {
+          // Verify token is still valid by fetching current user
+          const response = await authAPI.getCurrentUser();
+          if (response.success) {
+            setUser(response.data);
+          } else {
+            // Token is invalid, clear storage
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        // Token is invalid, clear storage
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const savedActivities = localStorage.getItem('activities');
-    if (savedActivities) {
-      setActivities(JSON.parse(savedActivities));
-    }
+    initAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+    try {
+      setLoading(true);
+      const response = await authAPI.login({ email, password });
       
-      logActivity('login', 'user', foundUser.id, `User ${foundUser.name} logged in`);
-      return true;
-    }
-    
-    return false;
-  };
-
-  const logout = () => {
-    if (user) {
-      logActivity('logout', 'user', user.id, `User ${user.name} logged out`);
-    }
-    setUser(null);
-    localStorage.removeItem('user');
-  };
-
-  const register = async (userData: Partial<User> & { password: string }): Promise<boolean> => {
-    const existingUser = mockUsers.find(u => u.email === userData.email);
-    if (existingUser) {
+      if (response.success) {
+        setUser(response.data.user);
+        return true;
+      }
       return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const newUser: User & { password: string } = {
-      id: Date.now().toString(),
-      email: userData.email!,
-      password: userData.password,
-      name: userData.name!,
-      role: userData.role || 'customer',
-      phone: userData.phone,
-      address: userData.address,
-      createdAt: new Date().toISOString()
-    };
+  const logout = async (): Promise<void> => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
+  };
 
-    mockUsers.push(newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-    
-    logActivity('register', 'user', newUser.id, `New user ${newUser.name} registered`);
-    return true;
+  const register = async (userData: Partial<User> & { password: string; password_confirmation: string }): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const response = await authAPI.register(userData);
+      
+      if (response.success) {
+        setUser(response.data.user);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProfile = async (userData: Partial<User>): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const response = await authAPI.updateProfile(userData);
+      
+      if (response.success) {
+        setUser(response.data);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const hasRole = (roles: string[]): boolean => {
     return user ? roles.includes(user.role) : false;
-  };
-
-  const logActivity = (action: string, entity: string, entityId: string, details: string) => {
-    if (!user) return;
-
-    const activity: Activity = {
-      id: Date.now().toString(),
-      userId: user.id,
-      action,
-      entity,
-      entityId,
-      details,
-      timestamp: new Date().toISOString(),
-      user
-    };
-
-    const updatedActivities = [activity, ...activities].slice(0, 100); // Keep last 100 activities
-    setActivities(updatedActivities);
-    localStorage.setItem('activities', JSON.stringify(updatedActivities));
   };
 
   return (
@@ -109,9 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       register,
+      updateProfile,
       isAuthenticated: !!user,
       hasRole,
-      logActivity
+      loading
     }}>
       {children}
     </AuthContext.Provider>
