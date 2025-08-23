@@ -1,51 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Activity } from '../types';
+import { User } from '../types';
+import { authAPI } from '../api';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
+  logout: () => Promise<void>;
+  register: (userData: Partial<User> & { password: string; password_confirmation: string }) => Promise<boolean>;
   isAuthenticated: boolean;
   hasRole: (roles: string[]) => boolean;
-  logActivity: (action: string, entity: string, entityId: string, details: string) => void;
+  updateProfile: (userData: Partial<User>) => Promise<boolean>;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock users data
-const mockUsers: (User & { password: string })[] = [
-  {
-    id: '1',
-    email: 'admin@rental.com',
-    password: 'admin123',
-    name: 'John Admin',
-    role: 'admin',
-    phone: '+1234567890',
-    address: '123 Admin St',
-    createdAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    email: 'staff@rental.com',
-    password: 'staff123',
-    name: 'Jane Staff',
-    role: 'staff',
-    phone: '+1234567891',
-    address: '456 Staff Ave',
-    createdAt: '2024-01-02T00:00:00Z'
-  },
-  {
-    id: '3',
-    email: 'customer@rental.com',
-    password: 'customer123',
-    name: 'Bob Customer',
-    role: 'customer',
-    phone: '+1234567892',
-    address: '789 Customer Rd',
-    createdAt: '2024-01-03T00:00:00Z'
-  }
-];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
