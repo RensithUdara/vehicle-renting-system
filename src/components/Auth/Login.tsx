@@ -32,9 +32,9 @@ const Login: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Admin', email: 'admin@rental.com', password: 'admin123' },
-    { role: 'Staff', email: 'staff@rental.com', password: 'staff123' },
-    { role: 'Customer', email: 'customer@rental.com', password: 'customer123' }
+    { role: 'Admin', email: 'admin@vehiclerental.com', password: 'admin123' },
+    { role: 'Staff', email: 'staff@vehiclerental.com', password: 'staff123' },
+    { role: 'Customer', email: 'customer@example.com', password: 'customer123' }
   ];
 
   return (
