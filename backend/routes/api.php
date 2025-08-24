@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\BookingController;
@@ -23,6 +24,62 @@ use App\Http\Controllers\Api\DashboardController;
 */
 
 // Public routes
+Route::get('/test', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'API is working!',
+        'timestamp' => now()
+    ]);
+});
+
+// Temporary test login endpoint (for CORS testing)
+Route::post('/login-test', function (Request $request) {
+    return response()->json([
+        'success' => true,
+        'message' => 'Login test successful',
+        'data' => [
+            'user' => [
+                'id' => 1,
+                'name' => 'Test User',
+                'email' => $request->email ?? 'test@example.com',
+                'role' => 'admin'
+            ],
+            'access_token' => 'test_token_123',
+            'token_type' => 'Bearer',
+        ]
+    ]);
+});
+
+// Temporary test register endpoint (for debugging)
+Route::post('/register-test', function (Request $request) {
+    try {
+        $user = App\Models\User::create([
+            'name' => $request->name ?? 'Test User',
+            'email' => $request->email ?? 'test' . rand(1000,9999) . '@example.com',
+            'password' => Hash::make($request->password ?? 'password123'),
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'role' => $request->role ?? 'customer',
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully',
+            'data' => [
+                'user' => $user,
+                'access_token' => 'test_token_' . $user->id,
+                'token_type' => 'Bearer',
+            ]
+        ], 201);
+    } catch (Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Registration failed: ' . $e->getMessage(),
+            'error' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 

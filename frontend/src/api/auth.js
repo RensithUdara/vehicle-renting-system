@@ -8,7 +8,7 @@ export const authAPI = {
 
     // Login user
     login: async (credentials) => {
-        const response = await api.post('/login', credentials);
+        const response = await api.post('/login.php', credentials);
         if (response.success && response.data.access_token) {
             localStorage.setItem('access_token', response.data.access_token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
